@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Hind:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* MediKue Design System Tokens */
+  --color-primary: #006c46;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #24a872;
+  --color-on-primary-container: #00341f;
+  --color-primary-fixed: #81f9bc;
+  --color-primary-fixed-dim: #64dca1;
+  --color-on-primary-fixed: #002112;
+  --color-on-primary-fixed-variant: #005234;
+  --color-inverse-primary: #64dca1;
+
+  --color-secondary: #54615b;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d7e6de;
+  --color-on-secondary-container: #5a6761;
+  --color-secondary-fixed: #d7e6de;
+  --color-secondary-fixed-dim: #bbcac2;
+  --color-on-secondary-fixed: #111e19;
+  --color-on-secondary-fixed-variant: #3c4a44;
+
+  --color-tertiary: #5d5f5f;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #939494;
+  --color-on-tertiary-container: #2b2d2d;
+  --color-tertiary-fixed: #e2e2e2;
+  --color-tertiary-fixed-dim: #c6c6c7;
+  --color-on-tertiary-fixed: #1a1c1c;
+  --color-on-tertiary-fixed-variant: #454747;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-background: #f7faf8;
+  --color-on-background: #191c1b;
+  --color-surface: #f7faf8;
+  --color-on-surface: #191c1b;
+  --color-surface-variant: #e0e3e1;
+  --color-on-surface-variant: #3d4a41;
+  --color-surface-dim: #d8dbd8;
+  --color-surface-bright: #f7faf8;
+  --color-surface-tint: #006c46;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f2;
+  --color-surface-container: #eceeec;
+  --color-surface-container-high: #e6e9e7;
+  --color-surface-container-highest: #e0e3e1;
+  --color-inverse-surface: #2d3130;
+  --color-inverse-on-surface: #eff1ef;
+
+  --color-outline: #6d7a71;
+  --color-outline-variant: #bccabf;
+
+  /* Font families */
+  --font-family-body: "Inter", sans-serif;
+  --font-family-display: "Inter", sans-serif;
+  --font-family-hindi: "Hind", sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  --spacing-huge: 64px;
+  --spacing-margin: 24px;
+  --spacing-gutter: 16px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+.icon-fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f7faf8;
+  color: #191c1b;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
