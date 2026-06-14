@@ -1,23 +1,27 @@
 ﻿"use client";
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
 
 const SLOTS = ["9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM","2:00 PM","2:30 PM","3:00 PM","3:30 PM","4:00 PM","4:30 PM"];
 const UNAVAILABLE = ["9:00 AM","10:00 AM","11:30 AM","2:00 PM","4:00 PM"];
 
 function BookInner() {
   const router = useRouter();
-  const params = useSearchParams();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState("");
   const [slot, setSlot] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const today = new Date().toISOString().split("T")[0];
-  const maxDate = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+  const [dateLimits] = useState(() => {
+    const now = new Date();
+    const max = new Date(now);
+    max.setDate(now.getDate() + 7);
+    return {
+      today: now.toISOString().split("T")[0],
+      maxDate: max.toISOString().split("T")[0],
+    };
+  });
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +67,7 @@ function BookInner() {
           </div>
           <div>
             <label className="block text-sm font-medium text-[#191c1b] mb-1.5">Date *</label>
-            <input required type="date" value={date} onChange={e => setDate(e.target.value)} min={today} max={maxDate}
+            <input required type="date" value={date} onChange={e => setDate(e.target.value)} min={dateLimits.today} max={dateLimits.maxDate}
               className="w-full bg-white border border-[#bccabf] rounded-xl px-4 py-3 text-base focus:outline-none focus:border-[#006c46] transition" />
           </div>
 

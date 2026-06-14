@@ -1,10 +1,8 @@
 ﻿"use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function ManualRegisterPage() {
-  const router = useRouter();
   const [form, setForm] = useState({ name: "", phone: "", age: "", gender: "", reason: "" });
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<number|null>(null);

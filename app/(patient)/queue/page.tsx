@@ -6,13 +6,14 @@ import { Suspense, useEffect, useState } from "react";
 function QueueTrackInner() {
   const params = useSearchParams();
   const token = params.get("token") ?? "22";
+  const tokenNumber = Number.parseInt(token.replace(/\D/g, ""), 10) || 22;
   const serving = 14;
-  const ahead = Math.max(0, parseInt(token) - serving - 1);
+  const initialAhead = Math.max(0, tokenNumber - serving - 1);
+  const [ahead, setAhead] = useState(initialAhead);
   const waitMins = ahead * 5;
-  const [progress, setProgress] = useState(ahead);
 
   useEffect(() => {
-    const t = setInterval(() => setProgress(p => Math.max(0, p - 1)), 30000);
+    const t = setInterval(() => setAhead(p => Math.max(0, p - 1)), 30000);
     return () => clearInterval(t);
   }, []);
 
