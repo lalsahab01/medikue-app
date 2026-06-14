@@ -4,75 +4,80 @@ export default function HomePage() {
   return (
     <div className="min-h-dvh bg-[#f7faf8] flex flex-col">
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between bg-white shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#006c46] rounded-lg flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-base">local_hospital</span>
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#006c46]">
+              <span className="material-symbols-outlined text-base text-white">local_hospital</span>
+            </div>
+            <span className="text-lg font-bold text-[#006c46]">MediKue<span className="text-[#24a872]">+</span></span>
           </div>
-          <span className="font-bold text-[#006c46] text-lg">MediKue<span className="text-[#24a872]">+</span></span>
+          <Link href="/login" className="rounded-full border border-[#006c46] px-4 py-2 text-sm font-medium text-[#006c46] transition-colors hover:bg-[#006c46] hover:text-white">
+            Staff Login
+          </Link>
         </div>
-        <Link href="/login" className="text-sm font-medium text-[#006c46] border border-[#006c46] px-4 py-1.5 rounded-full hover:bg-[#006c46] hover:text-white transition-colors">
-          Staff Login
-        </Link>
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center px-6 pt-10 pb-8 max-w-md mx-auto w-full">
-        <div className="w-24 h-24 bg-[#006c46] rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-          <span className="material-symbols-outlined text-white" style={{fontSize:"48px"}}>queue</span>
-        </div>
+      <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_420px] lg:px-8 lg:py-12">
+        <section className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-[#006c46] shadow-lg">
+            <span className="material-symbols-outlined text-white" style={{fontSize:"48px"}}>queue</span>
+          </div>
 
-        <h1 className="text-3xl font-extrabold text-[#191c1b] text-center leading-tight mb-2">
-          Smart Queue for<br/>
-          <span className="text-[#006c46]">Your Clinic</span>
-        </h1>
-        <p className="text-[#3d4a41] text-center text-base mb-8 leading-relaxed">
-          Skip the wait. Join the digital queue, book appointments, and get reminders — all from your phone.
-          <br/><span className="text-sm text-[#54615b] font-[family-name:'Hind',sans-serif]">अपनी बारी का इंतज़ार स्मार्ट तरीके से करें</span>
-        </p>
+          <h1 className="mb-3 max-w-2xl text-4xl font-extrabold leading-tight text-[#191c1b] sm:text-5xl">
+            Smart Queue for <span className="text-[#006c46]">Your Clinic</span>
+          </h1>
+          <p className="mb-8 max-w-xl text-base leading-relaxed text-[#3d4a41] sm:text-lg">
+            Skip the wait. Join the digital queue, book appointments, and get reminders all from your phone.
+            <br/><span className="font-[family-name:'Hind',sans-serif] text-sm text-[#54615b] sm:text-base">अपनी बारी का इंतज़ार स्मार्ट तरीके से करें</span>
+          </p>
 
-        {/* Primary CTA */}
-        <Link
-          href="/join-queue"
-          className="w-full bg-[#006c46] text-white font-semibold text-base py-4 rounded-2xl text-center mb-3 shadow-md active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-        >
-          <span className="material-symbols-outlined text-xl">confirmation_number</span>
-          Get Token Number
-        </Link>
-        <Link
-          href="/book"
-          className="w-full bg-white text-[#006c46] font-semibold text-base py-4 rounded-2xl text-center mb-3 border border-[#006c46] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-        >
-          <span className="material-symbols-outlined text-xl">calendar_month</span>
-          Book Appointment
-        </Link>
-        <Link
-          href="/register"
-          className="w-full bg-[#e0e3e1] text-[#191c1b] font-medium text-base py-4 rounded-2xl text-center flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-        >
-          <span className="material-symbols-outlined text-xl">person_add</span>
-          New Patient Registration
-        </Link>
+          {/* Primary CTA */}
+          <div className="grid w-full max-w-md gap-3 sm:grid-cols-2 lg:max-w-xl">
+            <Link
+              href="/join-queue"
+              className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#006c46] px-5 py-4 text-center text-base font-semibold text-white shadow-md transition-transform active:scale-[0.98] sm:col-span-2"
+            >
+              <span className="material-symbols-outlined text-xl">confirmation_number</span>
+              Get Token Number
+            </Link>
+            <Link
+              href="/book"
+              className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#006c46] bg-white px-5 py-4 text-center text-base font-semibold text-[#006c46] transition-transform active:scale-[0.98]"
+            >
+              <span className="material-symbols-outlined text-xl">calendar_month</span>
+              Book Appointment
+            </Link>
+            <Link
+              href="/register"
+              className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#e0e3e1] px-5 py-4 text-center text-base font-medium text-[#191c1b] transition-transform active:scale-[0.98]"
+            >
+              <span className="material-symbols-outlined text-xl">person_add</span>
+              Register
+            </Link>
+          </div>
+        </section>
 
         {/* Feature cards */}
-        <div className="grid grid-cols-2 gap-3 mt-8 w-full">
+        <section className="grid w-full grid-cols-2 gap-3 lg:self-center">
           {[
             { icon: "timer", title: "Live Wait Time", desc: "Know exactly when it is your turn" },
             { icon: "notifications", title: "Get Notified", desc: "SMS alert when your turn is near" },
             { icon: "receipt_long", title: "Digital Receipt", desc: "Prescription & bills on your phone" },
             { icon: "star", title: "Rate & Review", desc: "Share your clinic experience" },
           ].map((f) => (
-            <div key={f.title} className="bg-white rounded-2xl p-4 shadow-sm border border-[#e0e3e1]">
+            <div key={f.title} className="min-h-36 rounded-2xl border border-[#e0e3e1] bg-white p-4 shadow-sm">
               <span className="material-symbols-outlined text-[#006c46] text-2xl">{f.icon}</span>
               <p className="font-semibold text-[#191c1b] text-sm mt-1">{f.title}</p>
               <p className="text-[#6d7a71] text-xs mt-0.5">{f.desc}</p>
             </div>
           ))}
-        </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-[#6d7a71] pb-6 pt-2">
+      <footer className="px-4 pb-6 pt-2 text-center text-xs text-[#6d7a71]">
         © 2025 MediKue+ · Made for Indian Clinics
       </footer>
     </div>
