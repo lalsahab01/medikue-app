@@ -13,7 +13,7 @@ export default function HomePage() {
             <span className="text-lg font-bold text-[#006c46]">MediKue<span className="text-[#24a872]">+</span></span>
           </div>
           <Link href="/login" className="rounded-full border border-[#006c46] px-4 py-2 text-sm font-medium text-[#006c46] transition-colors hover:bg-[#006c46] hover:text-white">
-            Staff Login
+            Login
           </Link>
         </div>
       </header>
@@ -78,7 +78,10 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="px-4 pb-6 pt-2 text-center text-xs text-[#6d7a71]">
-        © 2025 MediKue+ · Made for Indian Clinics
+        <p>© 2025 MediKue+ · Made for Indian Clinics</p>
+        <p className="mt-1">
+          Are you a doctor? <Link href="/doctor-register" className="text-[#006c46] underline">Join with your clinic&apos;s invite code</Link>
+        </p>
       </footer>
     </div>
   );

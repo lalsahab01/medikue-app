@@ -1,18 +1,35 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", phone: "", age: "", gender: "", blood_group: "" });
+  const [form, setForm] = useState({ name: "", phone: "", password: "", age: "", gender: "", blood_group: "" });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    sessionStorage.setItem("patient", JSON.stringify(form));
-    router.push("/doctors");
+    try {
+      const res = await fetch("/api/auth/register/patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Registration failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+      router.push("/doctors");
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,10 +43,16 @@ export default function RegisterPage() {
 
       <main className="flex-1 px-6 pt-6 pb-8 max-w-md mx-auto w-full">
         <p className="text-[#54615b] text-sm mb-6">नया मरीज़ पंजीकरण · New Patient</p>
+
+        {error && (
+          <div className="bg-[#ffdad6] text-[#ba1a1a] text-sm px-4 py-3 rounded-xl mb-4">{error}</div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {([
             { label: "Full Name / पूरा नाम", key: "name", type: "text", placeholder: "e.g. Ramesh Kumar" },
             { label: "Phone Number / मोबाइल नंबर", key: "phone", type: "tel", placeholder: "10-digit mobile" },
+            { label: "Password / पासवर्ड", key: "password", type: "password", placeholder: "At least 6 characters" },
             { label: "Age / उम्र", key: "age", type: "number", placeholder: "Years" },
           ] as const).map(({ label, key, type, placeholder }) => (
             <div key={key}>
@@ -76,6 +99,10 @@ export default function RegisterPage() {
             {loading ? "Registering..." : "Continue →"}
           </button>
         </form>
+
+        <p className="text-center text-[#54615b] text-sm mt-6">
+          Already registered? <Link href="/login" className="text-[#006c46] font-medium underline">Log in</Link>
+        </p>
       </main>
     </div>
   );

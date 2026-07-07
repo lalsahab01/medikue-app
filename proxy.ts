@@ -1,42 +1,41 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { jwtVerify } from "jose";
+import { SESSION_COOKIE } from "./lib/auth/session";
+
+// Routes that require a session, mapped to the roles allowed to access them.
+const PROTECTED_PREFIXES: { prefix: string; roles: string[] }[] = [
+  { prefix: "/admin", roles: ["admin"] },
+  { prefix: "/dashboard", roles: ["doctor", "staff"] },
+];
+
+function getSecretKey() {
+  return new TextEncoder().encode(process.env.SESSION_SECRET!);
+}
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+  const match = PROTECTED_PREFIXES.find((p) => pathname.startsWith(p.prefix));
+  if (!match) return NextResponse.next();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return redirectToLogin(request);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const isStaffRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  const isLoginPage = request.nextUrl.pathname === "/login";
-
-  if (isStaffRoute && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    const role = payload.role as string;
+    if (!match.roles.includes(role)) return redirectToLogin(request);
+    return NextResponse.next();
+  } catch {
+    return redirectToLogin(request);
   }
-  if (isLoginPage && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+}
 
-  return supabaseResponse;
+function redirectToLogin(request: NextRequest) {
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("next", request.nextUrl.pathname);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/admin/:path*", "/dashboard/:path*"],
 };

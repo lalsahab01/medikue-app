@@ -1,5 +1,6 @@
 ﻿"use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const QUEUE = [
@@ -23,8 +24,19 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [queue, setQueue] = useState(QUEUE);
+  const [role, setRole] = useState<string | null>(null);
   const serving = queue.find(q => q.status === "with_doctor");
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(res => res.json()).then(data => setRole(data?.session?.role ?? null));
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  };
 
   const callNext = () => {
     setQueue(prev => {
@@ -60,9 +72,9 @@ export default function DashboardPage() {
               <span className="w-1.5 h-1.5 bg-[#81f9bc] rounded-full animate-pulse"></span>
               <span className="text-xs">Live</span>
             </div>
-            <Link href="/login" className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            <button onClick={handleLogout} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <span className="material-symbols-outlined text-sm">logout</span>
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -104,6 +116,7 @@ export default function DashboardPage() {
           {[
             { href: "/dashboard/patients", icon: "person_add", label: "Manual Register", sub: "Walk-in patient" },
             { href: "/dashboard/reports", icon: "bar_chart", label: "Daily Report", sub: "View today's stats" },
+            ...(role === "doctor" ? [{ href: "/dashboard/staff/new", icon: "badge", label: "Add Staff", sub: "Create a staff login" }] : []),
           ].map(a => (
             <Link key={a.href} href={a.href} className="bg-white rounded-2xl p-4 border border-[#e0e3e1] shadow-sm flex items-center gap-3 hover:bg-[#f2f4f2] transition">
               <div className="w-10 h-10 bg-[#e8f5ee] rounded-xl flex items-center justify-center">
