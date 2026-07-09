@@ -23,9 +23,13 @@ export async function proxy(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, getSecretKey());
     const role = payload.role as string;
-    if (!match.roles.includes(role)) return redirectToLogin(request);
+    // Authenticated but wrong role for this area -> Unauthorized (not the login page).
+    if (!match.roles.includes(role)) {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
     return NextResponse.next();
   } catch {
+    // Missing/expired/invalid session -> send to login, remembering where they wanted to go.
     return redirectToLogin(request);
   }
 }

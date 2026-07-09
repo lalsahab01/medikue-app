@@ -1,16 +1,17 @@
-﻿"use client";
-import { useEffect, useState } from "react";
+"use client";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const QUEUE = [
-  { token: 15, name: "Suresh Yadav", phone: "9876543210", reason: "Fever & cold", wait: "Now", status: "with_doctor" },
-  { token: 16, name: "Kavya Mehta", phone: "9812345678", reason: "Back pain", wait: "5 min", status: "called" },
-  { token: 17, name: "Ravi Sharma", phone: "9900112233", reason: "Follow-up", wait: "15 min", status: "waiting" },
-  { token: 18, name: "Anita Patel", phone: "9765432100", reason: "Checkup", wait: "20 min", status: "waiting" },
-  { token: 19, name: "Mohan Das", phone: "9654321099", reason: "Headache", wait: "25 min", status: "waiting" },
-  { token: 20, name: "Priti Singh", phone: "9543210988", reason: "Diabetes review", wait: "30 min", status: "waiting" },
-];
+type QueueRow = {
+  id: string;
+  token_number: number;
+  patient_name: string;
+  patient_phone: string;
+  reason: string | null;
+  status: string;
+  doctor_id: string;
+};
 
 const STATUS_COLOR: Record<string, string> = {
   with_doctor: "bg-[#006c46] text-white",
@@ -25,35 +26,62 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [queue, setQueue] = useState(QUEUE);
+  const [queue, setQueue] = useState<QueueRow[]>([]);
   const [role, setRole] = useState<string | null>(null);
-  const serving = queue.find(q => q.status === "with_doctor");
+  const [doneToday, setDoneToday] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/queue");
+      if (res.status === 401) { router.push("/login"); return; }
+      const data = await res.json();
+      const rows: QueueRow[] = data.queue ?? [];
+      setQueue(rows);
+      setDoneToday(rows.filter((r) => r.status === "done").length);
+    } catch {
+      /* keep last known queue on transient errors */
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
-    fetch("/api/auth/me").then(res => res.json()).then(data => setRole(data?.session?.role ?? null));
+    fetch("/api/auth/me").then(res => res.json()).then(data => setRole(data?.session?.role ?? null)).catch(() => {});
   }, []);
+
+  // Poll the live queue.
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
+  }, [load]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };
 
-  const callNext = () => {
-    setQueue(prev => {
-      const updated = [...prev];
-      const withDocIdx = updated.findIndex(q => q.status === "with_doctor");
-      if (withDocIdx >= 0) updated[withDocIdx].status = "done";
-      const calledIdx = updated.findIndex(q => q.status === "called");
-      if (calledIdx >= 0) updated[calledIdx].status = "with_doctor";
-      else {
-        const waitIdx = updated.findIndex(q => q.status === "waiting");
-        if (waitIdx >= 0) updated[waitIdx].status = "with_doctor";
-      }
-      return updated;
+  const setStatus = async (id: string, status: string) => {
+    await fetch(`/api/queue/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
     });
   };
 
-  const active = queue.filter(q => q.status !== "done" && q.status !== "skipped");
+  const active = queue.filter(q => q.status !== "done" && q.status !== "skipped" && q.status !== "cancelled");
+  const serving = active.find(q => q.status === "with_doctor");
+
+  // Complete the current patient and pull the next token in.
+  const callNext = async () => {
+    if (serving) await setStatus(serving.id, "done");
+    const next = queue
+      .filter(q => q.id !== serving?.id && (q.status === "called" || q.status === "waiting"))
+      .sort((a, b) => a.token_number - b.token_number)[0];
+    if (next) await setStatus(next.id, "with_doctor");
+    await load();
+  };
 
   return (
     <div className="min-h-dvh bg-[#f7faf8] flex flex-col">
@@ -64,7 +92,7 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined text-[#81f9bc]">local_hospital</span>
             <div>
               <p className="font-bold text-base leading-none">MediKue<span className="text-[#81f9bc]">+</span></p>
-              <p className="text-[10px] text-[#64dca1]">Dashboard</p>
+              <p className="text-[10px] text-[#64dca1]">{role === "doctor" ? "Doctor" : "Staff"} Dashboard</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -84,8 +112,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-3 gap-3 mb-4">
           {[
             { label: "In Queue", value: active.length, icon: "queue", color: "text-[#006c46]" },
-            { label: "Serving", value: serving?.token ?? "-", icon: "confirmation_number", color: "text-[#24a872]" },
-            { label: "Done Today", value: 24, icon: "check_circle", color: "text-[#54615b]" },
+            { label: "Serving", value: serving ? `#${serving.token_number}` : "-", icon: "confirmation_number", color: "text-[#24a872]" },
+            { label: "Done Today", value: doneToday, icon: "check_circle", color: "text-[#54615b]" },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl p-3 text-center shadow-sm border border-[#e0e3e1]">
               <span className={`material-symbols-outlined ${s.color}`}>{s.icon}</span>
@@ -100,8 +128,8 @@ export default function DashboardPage() {
           <div className="bg-[#006c46] rounded-2xl p-4 mb-4 flex items-center justify-between text-white shadow-md">
             <div>
               <p className="text-[#81f9bc] text-xs uppercase tracking-wide">Now With Doctor</p>
-              <p className="font-bold text-xl mt-0.5">#{serving.token} · {serving.name}</p>
-              <p className="text-[#64dca1] text-sm">{serving.reason}</p>
+              <p className="font-bold text-xl mt-0.5">#{serving.token_number} · {serving.patient_name}</p>
+              <p className="text-[#64dca1] text-sm">{serving.reason || "—"}</p>
             </div>
             <button onClick={callNext}
               className="bg-white text-[#006c46] font-semibold px-4 py-2.5 rounded-xl text-sm flex items-center gap-1.5">
@@ -109,6 +137,15 @@ export default function DashboardPage() {
               Next
             </button>
           </div>
+        )}
+
+        {/* If nobody is with the doctor yet, offer to call the first patient */}
+        {!serving && active.length > 0 && (
+          <button onClick={callNext}
+            className="w-full bg-[#006c46] text-white font-semibold py-3 rounded-2xl mb-4 flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-base">play_arrow</span>
+            Call First Patient
+          </button>
         )}
 
         {/* Quick actions */}
@@ -137,21 +174,29 @@ export default function DashboardPage() {
             <span className="text-xs text-[#54615b]">{active.length} patients</span>
           </div>
           <div className="divide-y divide-[#e0e3e1]">
+            {loading && active.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-[#54615b]">Loading queue…</p>
+            )}
+            {!loading && active.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-[#54615b]">No patients in the queue right now.</p>
+            )}
             {active.map(q => (
-              <div key={q.token} className="px-4 py-3 flex items-center gap-3">
+              <div key={q.id} className="px-4 py-3 flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${q.status === "with_doctor" ? "bg-[#006c46] text-white" : q.status === "called" ? "bg-[#24a872] text-white" : "bg-[#e0e3e1] text-[#191c1b]"}`}>
-                  #{q.token}
+                  #{q.token_number}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[#191c1b] text-sm">{q.name}</p>
-                  <p className="text-xs text-[#54615b] truncate">{q.reason} · {q.phone}</p>
+                  <p className="font-medium text-[#191c1b] text-sm">{q.patient_name}</p>
+                  <p className="text-xs text-[#54615b] truncate">{q.reason || "—"} · {q.patient_phone}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLOR[q.status]}`}>{STATUS_LABEL[q.status]}</span>
-                  <Link href={`/dashboard/prescription?patient=${q.name}&token=${q.token}`}
-                    className="w-8 h-8 rounded-xl bg-[#e8f5ee] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[#006c46] text-base">description</span>
-                  </Link>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLOR[q.status] ?? "bg-[#e0e3e1] text-[#191c1b]"}`}>{STATUS_LABEL[q.status] ?? q.status}</span>
+                  {role === "doctor" && (
+                    <Link href={`/dashboard/prescription?patient=${encodeURIComponent(q.patient_name)}&token=${q.token_number}&entry=${q.id}`}
+                      className="w-8 h-8 rounded-xl bg-[#e8f5ee] flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[#006c46] text-base">description</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

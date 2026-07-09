@@ -1,23 +1,58 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type DoctorInfo = { id: string; name: string; specialization: string };
+
 export default function ManualRegisterPage() {
-  const [form, setForm] = useState({ name: "", phone: "", age: "", gender: "", reason: "" });
+  const [form, setForm] = useState({ name: "", phone: "", age: "", gender: "", reason: "", doctor_id: "" });
+  const [doctors, setDoctors] = useState<DoctorInfo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState<number|null>(null);
+  const [error, setError] = useState("");
+  const [token, setToken] = useState<number | null>(null);
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleRegister = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch("/api/doctors")
+      .then(r => r.json())
+      .then(data => {
+        const list: DoctorInfo[] = data.doctors ?? [];
+        setDoctors(list);
+        if (list[0]) setForm(p => ({ ...p, doctor_id: list[0].id }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    if (!form.doctor_id) { setError("Please select a doctor."); return; }
     setLoading(true);
-    const t = Math.floor(Math.random() * 30) + 15;
-    setToken(t);
+    try {
+      // Persist fuller demographics (best effort), then issue a queue token.
+      if (form.age || form.gender) {
+        await fetch("/api/patients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: form.name, phone: form.phone, age: form.age, gender: form.gender }),
+        }).catch(() => {});
+      }
+      const res = await fetch("/api/queue/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctor_id: form.doctor_id, name: form.name, phone: form.phone, reason: form.reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Could not issue a token."); setLoading(false); return; }
+      setToken(data.token_number);
+    } catch {
+      setError("Network error. Please try again.");
+    }
     setLoading(false);
   };
 
-  if (token) {
+  if (token !== null) {
     return (
       <div className="min-h-dvh bg-[#f7faf8] flex flex-col items-center justify-center px-6">
         <div className="bg-[#006c46] rounded-3xl p-8 text-center w-full max-w-sm mb-6 shadow-lg">
@@ -25,7 +60,7 @@ export default function ManualRegisterPage() {
           <p className="text-white text-8xl font-extrabold">#{token}</p>
           <p className="text-[#64dca1] mt-2">{form.name} · {form.phone}</p>
         </div>
-        <button onClick={() => { setToken(null); setForm({ name:"",phone:"",age:"",gender:"",reason:"" }); }}
+        <button onClick={() => { setToken(null); setForm(p => ({ name:"",phone:"",age:"",gender:"",reason:"", doctor_id: p.doctor_id })); }}
           className="w-full max-w-sm bg-white border border-[#006c46] text-[#006c46] font-semibold py-4 rounded-2xl mb-3">
           Register Another
         </button>
@@ -48,7 +83,16 @@ export default function ManualRegisterPage() {
         </div>
       </header>
       <main className="flex-1 px-6 pt-6 pb-8 max-w-md mx-auto w-full">
+        {error && <div className="bg-[#ffdad6] text-[#ba1a1a] text-sm px-4 py-3 rounded-xl mb-4">{error}</div>}
         <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[#191c1b] mb-1.5">Doctor *</label>
+            <select required value={form.doctor_id} onChange={e => set("doctor_id", e.target.value)}
+              className="w-full bg-white border border-[#bccabf] rounded-xl px-4 py-3 text-base focus:outline-none focus:border-[#006c46] transition">
+              {doctors.length === 0 && <option value="">No doctors available</option>}
+              {doctors.map(d => <option key={d.id} value={d.id}>{d.name} · {d.specialization}</option>)}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-[#191c1b] mb-1.5">Patient Name *</label>
             <input required value={form.name} onChange={e => set("name", e.target.value)} placeholder="Full name"

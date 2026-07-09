@@ -1,21 +1,48 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 function PrescriptionInner() {
   const params = useSearchParams();
   const patient = params.get("patient") ?? "Patient";
   const token = params.get("token") ?? "1";
+  const entryId = params.get("entry") ?? undefined;
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [meds, setMeds] = useState([{ name: "", dosage: "", frequency: "", duration: "" }]);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const addMed = () => setMeds(m => [...m, { name: "", dosage: "", frequency: "", duration: "" }]);
   const updateMed = (i: number, key: string, val: string) =>
     setMeds(m => m.map((med, idx) => idx === i ? { ...med, [key]: val } : med));
+
+  const handleSave = async () => {
+    if (!diagnosis) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patient_name: patient,
+          queue_entry_id: entryId,
+          diagnosis,
+          notes,
+          medications: meds.filter(m => m.name && m.dosage && m.frequency && m.duration),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Could not save the prescription."); setLoading(false); return; }
+      setSaved(true);
+    } catch {
+      setError("Network error. Please try again.");
+    }
+    setLoading(false);
+  };
 
   if (saved) {
     return (
@@ -44,6 +71,7 @@ function PrescriptionInner() {
         </div>
       </header>
       <main className="flex-1 px-4 pt-4 pb-8 max-w-lg mx-auto w-full">
+        {error && <div className="bg-[#ffdad6] text-[#ba1a1a] text-sm px-4 py-3 rounded-xl mb-4">{error}</div>}
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium text-[#191c1b] mb-1.5">Diagnosis *</label>
@@ -80,10 +108,10 @@ function PrescriptionInner() {
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Additional notes..."
               className="w-full bg-white border border-[#bccabf] rounded-xl px-4 py-3 text-base focus:outline-none focus:border-[#006c46] resize-none transition" />
           </div>
-          <button onClick={() => setSaved(true)} disabled={!diagnosis}
+          <button onClick={handleSave} disabled={!diagnosis || loading}
             className="w-full bg-[#006c46] text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-60">
             <span className="material-symbols-outlined">save</span>
-            Save Prescription
+            {loading ? "Saving…" : "Save Prescription"}
           </button>
         </div>
       </main>
