@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", phone: "", password: "", age: "", gender: "", blood_group: "" });
+  const [form, setForm] = useState({ name: "", phone: "", age: "", gender: "", blood_group: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -25,6 +25,8 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
+      // No login in the MVP — remember the patient locally for their profile screen.
+      localStorage.setItem("mk_patient", JSON.stringify({ name: form.name, phone: form.phone, age: form.age, gender: form.gender, blood_group: form.blood_group }));
       router.push("/doctors");
     } catch {
       setError("Network error. Please try again.");
@@ -42,7 +44,7 @@ export default function RegisterPage() {
       </header>
 
       <main className="flex-1 px-6 pt-6 pb-8 max-w-md mx-auto w-full">
-        <p className="text-[#54615b] text-sm mb-6">नया मरीज़ पंजीकरण · New Patient</p>
+        <p className="text-[#54615b] text-sm mb-6">नया मरीज़ पंजीकरण · New Patient — no password needed</p>
 
         {error && (
           <div className="bg-[#ffdad6] text-[#ba1a1a] text-sm px-4 py-3 rounded-xl mb-4">{error}</div>
@@ -52,7 +54,6 @@ export default function RegisterPage() {
           {([
             { label: "Full Name / पूरा नाम", key: "name", type: "text", placeholder: "e.g. Ramesh Kumar" },
             { label: "Phone Number / मोबाइल नंबर", key: "phone", type: "tel", placeholder: "10-digit mobile" },
-            { label: "Password / पासवर्ड", key: "password", type: "password", placeholder: "At least 6 characters" },
             { label: "Age / उम्र", key: "age", type: "number", placeholder: "Years" },
           ] as const).map(({ label, key, type, placeholder }) => (
             <div key={key}>
@@ -101,7 +102,7 @@ export default function RegisterPage() {
         </form>
 
         <p className="text-center text-[#54615b] text-sm mt-6">
-          Already registered? <Link href="/login" className="text-[#006c46] font-medium underline">Log in</Link>
+          Just want your token? <Link href="/doctors" className="text-[#006c46] font-medium underline">Pick a doctor</Link>
         </p>
       </main>
     </div>

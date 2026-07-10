@@ -141,7 +141,18 @@ create table if not exists feedback (
   created_at timestamptz default now()
 );
 
--- Enable Row Level Security
+-- ============================================================================
+-- Row Level Security (deny-by-default)
+--
+-- This app does NOT use Supabase Auth for its portal users. Authentication is a
+-- custom signed-cookie JWT (see lib/auth/session.ts) and ALL privileged data access
+-- happens in Next.js route handlers using the service-role key, which BYPASSES RLS.
+--
+-- Therefore every table below has RLS enabled with NO policy for the anon/authenticated
+-- roles -> the browser's publishable key can neither read nor write them. The only
+-- exception is public discovery (clinics, doctors) which the homepage reads with the
+-- anon key.
+-- ============================================================================
 alter table clinics enable row level security;
 alter table doctors enable row level security;
 alter table patients enable row level security;
@@ -153,25 +164,11 @@ alter table payments enable row level security;
 alter table staff_profiles enable row level security;
 alter table feedback enable row level security;
 
--- Public read for clinic/doctor discovery
-create policy "Public read clinics" on clinics for select using (true);
-create policy "Public read doctors" on doctors for select using (true);
-create policy "Public read queue_entries" on queue_entries for select using (true);
+-- Public discovery only.
+create policy "Public read clinics" on clinics for select to anon, authenticated using (true);
+create policy "Public read doctors"  on doctors  for select to anon, authenticated using (true);
 
--- Anyone can insert queue entry (join queue)
-create policy "Anyone can join queue" on queue_entries for insert with check (true);
-create policy "Anyone can register patient" on patients for insert with check (true);
-create policy "Anyone can book appointment" on appointments for insert with check (true);
-create policy "Anyone can give feedback" on feedback for insert with check (true);
-
--- Staff can do everything (authenticated users)
-create policy "Staff full access queue" on queue_entries for all using (auth.role() = 'authenticated');
-create policy "Staff full access prescriptions" on prescriptions for all using (auth.role() = 'authenticated');
-create policy "Staff full access medications" on medications for all using (auth.role() = 'authenticated');
-create policy "Staff full access payments" on payments for all using (auth.role() = 'authenticated');
-create policy "Staff full access patients" on patients for all using (auth.role() = 'authenticated');
-
--- Enable realtime for queue
+-- Realtime publication for the live queue board (server-side subscribers only).
 alter publication supabase_realtime add table queue_entries;
 
 -- Seed demo clinic and doctors

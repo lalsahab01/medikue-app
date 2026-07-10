@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import Link from "next/link";
 
@@ -6,6 +6,32 @@ export default function FeedbackPage() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    if (rating === 0) return;
+    setLoading(true);
+    setError("");
+    try {
+      let patientName = "Anonymous";
+      try {
+        const stored = JSON.parse(localStorage.getItem("mk_patient") || "{}");
+        if (stored?.name) patientName = stored.name;
+      } catch {}
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, comment, patient_name: patientName }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Could not submit feedback."); setLoading(false); return; }
+      setSubmitted(true);
+    } catch {
+      setError("Network error. Please try again.");
+    }
+    setLoading(false);
+  };
 
   if (submitted) {
     return (
@@ -36,12 +62,12 @@ export default function FeedbackPage() {
 
       <main className="flex-1 px-6 pt-8 pb-8 max-w-md mx-auto w-full flex flex-col items-center">
         <div className="w-16 h-16 bg-[#e8f5ee] rounded-2xl flex items-center justify-center mb-4">
-          <span className="material-symbols-outlined text-[#006c46] text-3xl">stethoscope</span>
+          <span className="material-symbols-outlined text-[#006c46] text-3xl">reviews</span>
         </div>
-        <h2 className="text-lg font-semibold text-[#191c1b] mb-1">Dr. Priya Sharma</h2>
-        <p className="text-sm text-[#54615b] mb-8">General Physician</p>
+        <h2 className="text-lg font-semibold text-[#191c1b] mb-1">How was your visit?</h2>
+        <p className="text-sm text-[#54615b] mb-8">MediKue+ Clinic</p>
 
-        <p className="text-base font-medium text-[#191c1b] mb-4 self-start w-full">How was your experience?</p>
+        <p className="text-base font-medium text-[#191c1b] mb-4 self-start w-full">Your rating</p>
         <div className="flex gap-3 mb-8">
           {[1,2,3,4,5].map(star => (
             <button key={star} type="button" onClick={() => setRating(star)}
@@ -51,6 +77,8 @@ export default function FeedbackPage() {
           ))}
         </div>
 
+        {error && <div className="w-full bg-[#ffdad6] text-[#ba1a1a] text-sm px-4 py-3 rounded-xl mb-4">{error}</div>}
+
         <div className="w-full mb-6">
           <label className="block text-sm font-medium text-[#191c1b] mb-1.5">Comments (optional)</label>
           <textarea value={comment} onChange={e => setComment(e.target.value)}
@@ -59,10 +87,10 @@ export default function FeedbackPage() {
         </div>
 
         <button
-          disabled={rating === 0}
-          onClick={() => setSubmitted(true)}
+          disabled={rating === 0 || loading}
+          onClick={handleSubmit}
           className="w-full bg-[#006c46] text-white font-semibold py-4 rounded-2xl disabled:opacity-40 active:scale-[0.98] transition-all">
-          Submit Feedback
+          {loading ? "Submitting…" : "Submit Feedback"}
         </button>
       </main>
     </div>

@@ -1,24 +1,65 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
+
+type DoctorInfo = {
+  id: string;
+  name: string;
+  specialization: string;
+  tokens_ahead: number;
+  estimated_wait_minutes: number;
+};
 
 function JoinQueueInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const doctorId = params.get("doctor") ?? "1";
+  const doctorId = params.get("doctor") ?? "";
+  const [doctor, setDoctor] = useState<DoctorInfo | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Load the chosen doctor (and their live wait) for the header card.
+  useEffect(() => {
+    fetch("/api/doctors")
+      .then((r) => r.json())
+      .then((data) => {
+        const list: DoctorInfo[] = data.doctors ?? [];
+        setDoctor(list.find((d) => d.id === doctorId) ?? list[0] ?? null);
+      })
+      .catch(() => setDoctor(null));
+  }, [doctorId]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    if (!doctor) {
+      setError("Please pick a doctor first.");
+      return;
+    }
     setLoading(true);
-    const token = Math.floor(Math.random() * 50) + 1;
-    sessionStorage.setItem("queue_token", JSON.stringify({ token, name, doctorId, time: new Date().toISOString() }));
-    router.push(`/queue?token=${token}&doctor=${doctorId}`);
+    try {
+      const res = await fetch("/api/queue/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctor_id: doctor.id, name, phone, reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not join the queue.");
+        setLoading(false);
+        return;
+      }
+      // Remember this patient locally for the profile screen (no login in the MVP).
+      localStorage.setItem("mk_patient", JSON.stringify({ name, phone }));
+      router.push(`/queue?id=${data.entry_id}&clinic=${data.clinic_id}`);
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,10 +79,18 @@ function JoinQueueInner() {
         <div className="bg-[#e8f5ee] rounded-2xl p-4 mb-6 flex items-center gap-3">
           <span className="material-symbols-outlined text-[#006c46] text-3xl">confirmation_number</span>
           <div>
-            <p className="font-semibold text-[#006c46]">Currently serving: Token #14</p>
-            <p className="text-sm text-[#3d4a41]">8 patients ahead · ~25 min wait</p>
+            <p className="font-semibold text-[#006c46]">
+              {doctor ? doctor.name : "Loading doctor…"}
+            </p>
+            <p className="text-sm text-[#3d4a41]">
+              {doctor
+                ? `${doctor.tokens_ahead} ahead · ~${doctor.estimated_wait_minutes} min wait`
+                : "Fetching live wait time"}
+            </p>
           </div>
         </div>
+
+        {error && <div className="bg-[#ffdad6] text-[#ba1a1a] text-sm px-4 py-3 rounded-xl mb-4">{error}</div>}
 
         <form onSubmit={handleJoin} className="flex flex-col gap-4">
           <div>
